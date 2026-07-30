@@ -1,0 +1,2 @@
+"""Dashboard application entry point."""
+

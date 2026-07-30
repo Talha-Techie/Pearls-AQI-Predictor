@@ -1,25 +1,32 @@
-from pydantic import Field
+from functools import lru_cache
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    """
-    Application configuration loaded from environment variables.
-    """
+    app_name: str = "Pearls AQI Predictor"
+    app_env: str = "development"
 
-    OPENWEATHER_API_KEY: str = Field(..., description="OpenWeather API key")
+    city: str
+    latitude: float
+    longitude: float
+    timezone: str = "UTC"
 
-    DEFAULT_CITY: str = Field(default="Lahore")
+    weather_api_url: str = "https://api.open-meteo.com/v1/forecast"
+    air_quality_api_url: str = (
+        "https://air-quality-api.open-meteo.com/v1/air-quality"
+    )
 
-    LATITUDE: float = Field(default=31.5204)
-
-    LONGITUDE: float = Field(default=74.3587)
+    http_timeout_seconds: int = 20
 
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
+        case_sensitive=False,
         extra="ignore",
     )
 
 
-settings = Settings()
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()
