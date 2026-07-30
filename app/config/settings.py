@@ -12,12 +12,18 @@ class Settings(BaseSettings):
     longitude: float
     timezone: str = "UTC"
 
+    # Live APIs
     weather_api_url: str = "https://api.open-meteo.com/v1/forecast"
     air_quality_api_url: str = (
         "https://air-quality-api.open-meteo.com/v1/air-quality"
     )
 
-    http_timeout_seconds: int = 20
+    # Historical APIs
+    historical_weather_api_url: str = (
+        "https://archive-api.open-meteo.com/v1/archive"
+    )
+
+    http_timeout_seconds: int = 30
 
     model_config = SettingsConfigDict(
         env_file=".env",

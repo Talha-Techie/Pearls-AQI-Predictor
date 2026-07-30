@@ -1,11 +1,17 @@
-__pycache__/
-*.py[cod]
+# Environment
 .env
 .venv/
-venv/
-data/raw/*
-data/processed/*
-data/historical/*
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Generated datasets
+data/raw/*.parquet
+data/historical/*.parquet
+data/processed/*.parquet
+
+# Preserve folders
 !data/raw/.gitkeep
-!data/processed/.gitkeep
 !data/historical/.gitkeep
+!data/processed/.gitkeep
