@@ -1,5 +1,5 @@
 from __future__ import annotations
-
+from app.config.settings import get_settings
 import argparse
 from pathlib import Path
 
@@ -13,6 +13,7 @@ from app.feature_pipeline.validator import (
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 PROCESSED_DATA_DIR = PROJECT_ROOT / "data" / "processed"
+settings = get_settings()
 
 
 TARGET_COLUMNS = [
@@ -99,9 +100,13 @@ def _add_time_features(
 
     timestamp = df["timestamp"]
 
-    df["hour"] = timestamp.dt.hour
-    df["day_of_week"] = timestamp.dt.dayofweek
-    df["month"] = timestamp.dt.month
+    local_timestamp = timestamp.dt.tz_convert(
+        settings.timezone
+    )
+
+    df["hour"] = local_timestamp.dt.hour
+    df["day_of_week"] = local_timestamp.dt.dayofweek
+    df["month"] = local_timestamp.dt.month
 
     df["is_weekend"] = (
         df["day_of_week"] >= 5

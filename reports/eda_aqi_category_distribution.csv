@@ -1,0 +1,7 @@
+aqi_category,count,percentage
+Good,0,0.0
+Moderate,4490,14.368919610855095
+Unhealthy for Sensitive Groups,10457,33.46454173067076
+Unhealthy,12450,39.84254992319509
+Very Unhealthy,3626,11.60394265232975
+Hazardous,225,0.7200460829493087
