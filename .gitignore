@@ -15,3 +15,9 @@ data/processed/*.parquet
 !data/raw/.gitkeep
 !data/historical/.gitkeep
 !data/processed/.gitkeep
+
+# Local model artifacts
+artifacts/models/*.joblib
+
+# Keep model directory
+!artifacts/models/.gitkeep
