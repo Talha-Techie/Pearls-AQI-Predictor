@@ -21,3 +21,29 @@ artifacts/models/*.joblib
 
 # Keep model directory
 !artifacts/models/.gitkeep
+
+# Feast runtime files
+feature_repo/data/registry.db
+feature_repo/data/online_store.db
+feature_repo/data/*.db
+
+# Feast generated metadata
+.feast/
+
+# MLflow local artifacts if generated
+mlruns/
+
+# Feast generated data
+feature_repo/data/registry.db
+feature_repo/data/online_store.db
+feature_repo/data/*.db
+feature_repo/data/*.parquet
+
+# Feast cache/runtime
+.feast/
+
+# Test temp data
+.test_tmp/
+
+# MLflow local runtime
+mlruns/
