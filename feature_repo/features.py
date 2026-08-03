@@ -23,6 +23,15 @@ from feast.types import (
     Int64,
 )
 
+from feast import (
+    Entity,
+    FeatureService,
+    FeatureView,
+    Field,
+    FileSource,
+    PushSource,
+)
+
 
 # ------------------------------------------------------------------
 # Entity
@@ -46,6 +55,11 @@ aqi_features_source = FileSource(
     name="aqi_features_source",
     path="data/aqi_features.parquet",
     timestamp_field="timestamp",
+)
+
+aqi_features_push_source = PushSource(
+    name="aqi_features_push_source",
+    batch_source=aqi_features_source,
 )
 
 
@@ -248,7 +262,7 @@ aqi_hourly_features = FeatureView(
             dtype=Float64,
         ),
     ],
-    source=aqi_features_source,
+    source=aqi_features_push_source,
     online=True,
     description=(
         "Inference-safe hourly weather, pollution, "

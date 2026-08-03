@@ -7,6 +7,7 @@ from app.feature_pipeline.engineer import (
     MODEL_FEATURE_COLUMNS,
     TARGET_COLUMNS,
     engineer_features,
+    engineer_inference_features,
 )
 
 
@@ -211,3 +212,36 @@ def test_output_row_count_is_correct() -> None:
     expected_rows = 200 - 24 - 72
 
     assert len(processed) == expected_rows
+
+
+def test_inference_features_do_not_require_targets() -> None:
+    df = make_dataset(
+        hours=100
+    )
+
+    processed = engineer_inference_features(
+        df
+    )
+
+    assert not processed.empty
+
+    for column in MODEL_FEATURE_COLUMNS:
+        assert column in processed.columns
+
+    for target in TARGET_COLUMNS:
+        assert target not in processed.columns
+
+
+def test_latest_inference_row_is_preserved() -> None:
+    df = make_dataset(
+        hours=100
+    )
+
+    processed = engineer_inference_features(
+        df
+    )
+
+    assert (
+        processed.iloc[-1]["timestamp"]
+        == df.iloc[-1]["timestamp"]
+    )

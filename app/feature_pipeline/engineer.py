@@ -364,6 +364,58 @@ def engineer_features(
     return training_df
 
 
+def engineer_inference_features(
+    dataframe: pd.DataFrame,
+) -> pd.DataFrame:
+    validation = validate_hourly_dataset(
+        dataframe
+    )
+
+    df = dataframe.copy()
+
+    df["timestamp"] = pd.to_datetime(
+        df["timestamp"],
+        utc=True,
+    )
+
+    df = (
+        df.sort_values(
+            ["city", "timestamp"]
+        )
+        .reset_index(drop=True)
+    )
+
+    city_count = df["city"].nunique()
+
+    if city_count != 1:
+        raise FeatureEngineeringError(
+            "Inference feature pipeline expects "
+            f"exactly one city, received {city_count}."
+        )
+
+    df = _add_time_features(df)
+    df = _add_lag_features(df)
+    df = _add_rolling_features(df)
+    df = _add_change_features(df)
+
+    df = df.replace(
+        [np.inf, -np.inf],
+        np.nan,
+    )
+
+    inference_df = df.dropna(
+        subset=MODEL_FEATURE_COLUMNS
+    ).reset_index(drop=True)
+
+    if inference_df.empty:
+        raise FeatureEngineeringError(
+            "No usable inference rows remain after "
+            "feature engineering."
+        )
+
+    return inference_df
+
+
 def process_file(
     input_path: Path,
     output_path: Path | None = None,
