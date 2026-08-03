@@ -14,6 +14,7 @@ from dotenv import load_dotenv
 from feast import FeatureStore
 
 from app.feature_pipeline.engineer import MODEL_FEATURE_COLUMNS
+from app.prediction.alerts import enrich_prediction
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -148,7 +149,7 @@ def predict_aqi(
             1,
         )
 
-    return {
+    result = {
         "city": city,
         "current_aqi": round(
             current_aqi,
@@ -165,6 +166,8 @@ def predict_aqi(
             "DagsHub MLflow Model Registry"
         ),
     }
+
+    return enrich_prediction(result)
 
 
 def main() -> None:
