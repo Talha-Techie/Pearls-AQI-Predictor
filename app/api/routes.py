@@ -3,11 +3,16 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException, Query
 
 from app.api.schemas import (
+    ExplanationResponse,
     FeatureRefreshResponse,
     ForecastResponse,
 )
 from app.feature_pipeline.live_pipeline import (
     run_live_feature_pipeline,
+)
+from app.prediction.explain import (
+    ExplanationServiceError,
+    explain_horizon,
 )
 from app.prediction.service import (
     PredictionServiceError,
@@ -134,5 +139,49 @@ def get_live_forecast(
             detail=(
                 "Unable to generate "
                 "live AQI forecast."
+            ),
+        ) from exc
+
+
+@router.get(
+    "/explain/{horizon}",
+    response_model=ExplanationResponse,
+)
+def explain_forecast(
+    horizon: str,
+    city: str = Query(
+        default="Lahore",
+        min_length=1,
+    ),
+    top_n: int = Query(
+        default=8,
+        ge=1,
+        le=20,
+    ),
+) -> ExplanationResponse:
+
+    try:
+        result = explain_horizon(
+            city=city,
+            horizon=horizon,
+            top_n=top_n,
+        )
+
+        return ExplanationResponse(
+            **result
+        )
+
+    except ExplanationServiceError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=str(exc),
+        ) from exc
+
+    except Exception as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "Unable to generate "
+                "forecast explanation."
             ),
         ) from exc

@@ -38,3 +38,22 @@ class FeatureRefreshResponse(BaseModel):
 class HealthResponse(BaseModel):
     status: str
     service: str
+
+
+class FeatureContribution(BaseModel):
+    feature: str
+    value: float
+    contribution: float
+    direction: str
+
+
+class ExplanationResponse(BaseModel):
+    city: str
+    horizon: str
+    prediction: float
+    base_value: float
+    top_features: list[
+        FeatureContribution
+    ]
+    feature_count: int
+    method: str
