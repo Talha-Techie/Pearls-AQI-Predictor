@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+import textwrap
 from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -36,6 +37,24 @@ METRICS_PATH = (
 
 LOCAL_TIMEZONE = ZoneInfo("Asia/Karachi")
 
+# AQI category -> (color, glow color, label) — used everywhere so the
+# whole UI agrees on what "unhealthy" looks like.
+AQI_BANDS = [
+    (0, 50, "#22c55e", "Good"),
+    (50, 100, "#eab308", "Moderate"),
+    (100, 150, "#f97316", "Unhealthy (Sensitive)"),
+    (150, 200, "#ef4444", "Unhealthy"),
+    (200, 300, "#a855f7", "Very Unhealthy"),
+    (300, 500, "#7f1d1d", "Hazardous"),
+]
+
+
+def aqi_color(value: float) -> str:
+    for lo, hi, color, _ in AQI_BANDS:
+        if lo <= value < hi:
+            return color
+    return AQI_BANDS[-1][2]
+
 
 st.set_page_config(
     page_title="Pearls AQI Predictor",
@@ -44,124 +63,279 @@ st.set_page_config(
 )
 
 
-st.markdown(
+st.html(
+"""
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+
+:root {
+    --bg-0: #05070a;
+    --bg-1: #0a0e14;
+    --panel: rgba(18, 24, 34, 0.72);
+    --panel-solid: rgba(15, 20, 29, 0.96);
+    --border: rgba(148, 163, 184, 0.14);
+    --border-hover: rgba(148, 163, 184, 0.28);
+    --text-primary: #eef1f6;
+    --text-muted: #8891a3;
+    --accent: #34d8b0;
+    --accent-soft: rgba(52, 216, 176, 0.14);
+    --danger: #ef4444;
+}
+
+html, body, [class*="css"] {
+    font-family: 'Space Grotesk', -apple-system, sans-serif;
+}
+
+.stApp {
+    background:
+        radial-gradient(circle at 8% 0%, rgba(52,216,176,0.10), transparent 38%),
+        radial-gradient(circle at 92% 12%, rgba(124,92,255,0.10), transparent 42%),
+        radial-gradient(circle at 50% 100%, rgba(52,216,176,0.05), transparent 55%),
+        linear-gradient(180deg, var(--bg-0) 0%, var(--bg-1) 100%);
+    background-attachment: fixed;
+}
+
+.block-container {
+    max-width: 1440px;
+    padding-top: 1.6rem;
+    padding-bottom: 3rem;
+}
+
+#MainMenu, footer, header[data-testid="stHeader"] { visibility: hidden; }
+
+/* ---------- animated background grid + noise ---------- */
+.grid-overlay {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+        linear-gradient(rgba(148,163,184,0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(148,163,184,0.035) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 20%, transparent 75%);
+}
+
+/* ---------- hero ---------- */
+.hero {
+    position: relative;
+    padding: 30px 34px;
+    border: 1px solid var(--border);
+    border-radius: 22px;
+    background:
+        linear-gradient(135deg, rgba(30,41,56,0.92), rgba(10,14,20,0.95));
+    margin-bottom: 26px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+}
+
+.hero::before {
+    content: "";
+    position: absolute;
+    top: -60%;
+    right: -10%;
+    width: 420px;
+    height: 420px;
+    background: radial-gradient(circle, rgba(52,216,176,0.22), transparent 70%);
+    filter: blur(10px);
+    animation: drift 12s ease-in-out infinite alternate;
+}
+
+@keyframes drift {
+    from { transform: translate(0,0) scale(1); }
+    to   { transform: translate(-30px, 40px) scale(1.15); }
+}
+
+.eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: var(--accent-soft);
+    border: 1px solid rgba(52,216,176,0.25);
+    padding: 4px 10px;
+    border-radius: 999px;
+    margin-bottom: 12px;
+}
+
+.hero-title {
+    font-size: 42px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 6px;
+    background: linear-gradient(90deg, #ffffff, #b9c4d4);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.hero-subtitle {
+    color: var(--text-muted);
+    font-size: 15px;
+    max-width: 560px;
+    line-height: 1.5;
+}
+
+.hero-meta {
+    color: #6b7688;
+    font-size: 13px;
+    margin-top: 14px;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.live-pill {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 14px;
+    border-radius: 999px;
+    background: rgba(34,197,94,0.10);
+    color: #4ade80;
+    border: 1px solid rgba(34,197,94,0.28);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.live-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #4ade80;
+    box-shadow: 0 0 0 0 rgba(74,222,128,0.6);
+    animation: pulse-dot 1.8s infinite;
+}
+
+@keyframes pulse-dot {
+    0%   { box-shadow: 0 0 0 0 rgba(74,222,128,0.55); }
+    70%  { box-shadow: 0 0 0 9px rgba(74,222,128,0); }
+    100% { box-shadow: 0 0 0 0 rgba(74,222,128,0); }
+}
+
+/* ---------- KPI cards ---------- */
+.metric-card {
+    position: relative;
+    background: var(--panel);
+    backdrop-filter: blur(14px);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 22px 22px 20px;
+    min-height: 158px;
+    box-shadow: 0 12px 34px rgba(0,0,0,0.22);
+    transition: transform .18s ease, border-color .18s ease;
+    overflow: hidden;
+}
+
+.metric-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--border-hover);
+}
+
+.metric-card::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 3px;
+    background: var(--bar-color, var(--accent));
+    opacity: 0.85;
+}
+
+.metric-label {
+    color: var(--text-muted);
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+}
+
+.metric-value {
+    font-size: 40px;
+    font-weight: 700;
+    margin-top: 8px;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+}
+
+.metric-category {
+    margin-top: 10px;
+    display: inline-block;
+    font-size: 12.5px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 999px;
+}
+
+/* ---------- pollutant chips ---------- */
+.info-card {
+    padding: 18px 18px;
+    border-radius: 16px;
+    background: var(--panel);
+    backdrop-filter: blur(14px);
+    border: 1px solid var(--border);
+    transition: border-color .18s ease, transform .18s ease;
+}
+
+.info-card:hover {
+    border-color: var(--border-hover);
+    transform: translateY(-2px);
+}
+
+/* ---------- generic surfaces ---------- */
+section[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, rgba(10,14,20,0.98), rgba(6,9,13,0.98));
+    border-right: 1px solid var(--border);
+}
+
+section[data-testid="stSidebar"] * {
+    font-family: 'Space Grotesk', sans-serif;
+}
+
+.stButton > button {
+    border-radius: 11px;
+    font-weight: 650;
+    min-height: 44px;
+    border: 1px solid var(--border);
+    transition: all .15s ease;
+}
+
+.stButton > button:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+button[data-baseweb="tab"] {
+    font-weight: 650;
+    font-family: 'Space Grotesk', sans-serif;
+}
+
+div[data-testid="stVerticalBlock"] { gap: 0.8rem; }
+
+div[data-testid="stMetricValue"] {
+    font-family: 'JetBrains Mono', monospace;
+}
+
+/* subtle divider */
+hr, .stDivider {
+    border-color: var(--border) !important;
+}
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+    background: rgba(148,163,184,0.18);
+    border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(148,163,184,0.32); }
+
+</style>
+<div class="grid-overlay"></div>
     """
-    <style>
-    .stApp {
-        background:
-            radial-gradient(
-                circle at top right,
-                rgba(46, 160, 130, 0.08),
-                transparent 30%
-            ),
-            #0e1117;
-    }
-
-    .block-container {
-        max-width: 1400px;
-        padding-top: 2rem;
-        padding-bottom: 3rem;
-    }
-
-    #MainMenu {
-        visibility: hidden;
-    }
-
-    footer {
-        visibility: hidden;
-    }
-
-    .hero {
-        padding: 24px 28px;
-        border: 1px solid rgba(255,255,255,0.08);
-        border-radius: 20px;
-        background:
-            linear-gradient(
-                135deg,
-                rgba(25, 35, 50, 0.95),
-                rgba(13, 21, 30, 0.95)
-            );
-        margin-bottom: 24px;
-    }
-
-    .hero-title {
-        font-size: 38px;
-        font-weight: 750;
-        margin-bottom: 4px;
-    }
-
-    .hero-subtitle {
-        color: #9da8b6;
-        font-size: 15px;
-    }
-
-    .metric-card {
-        background: rgba(20, 27, 38, 0.95);
-        border: 1px solid rgba(255,255,255,0.08);
-        border-radius: 16px;
-        padding: 20px;
-        min-height: 155px;
-        box-shadow: 0 8px 30px rgba(0,0,0,0.18);
-    }
-
-    .metric-label {
-        color: #8d98a8;
-        font-size: 13px;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-    }
-
-    .metric-value {
-        font-size: 36px;
-        font-weight: 750;
-        margin-top: 7px;
-    }
-
-    .metric-category {
-        margin-top: 8px;
-        font-size: 14px;
-        font-weight: 600;
-    }
-
-    .live-pill {
-        display: inline-block;
-        padding: 5px 11px;
-        border-radius: 999px;
-        background: rgba(34,197,94,0.12);
-        color: #72e49a;
-        border: 1px solid rgba(34,197,94,0.30);
-        font-size: 12px;
-        font-weight: 700;
-        letter-spacing: .04em;
-    }
-
-    .info-card {
-        padding: 18px 22px;
-        border-radius: 15px;
-        background: rgba(30, 39, 52, 0.82);
-        border: 1px solid rgba(255,255,255,0.07);
-    }
-
-    section[data-testid="stSidebar"] {
-        border-right: 1px solid rgba(255,255,255,0.07);
-    }
-
-    .stButton > button {
-        border-radius: 10px;
-        font-weight: 650;
-        min-height: 44px;
-    }
-
-    button[data-baseweb="tab"] {
-        font-weight: 650;
-    }
-
-    div[data-testid="stVerticalBlock"] {
-        gap: 0.8rem;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True,
 )
 
 
@@ -233,21 +407,23 @@ def metric_card(
     value: float,
     category: str,
 ) -> None:
-    st.markdown(
-        f"""
-        <div class="metric-card">
-            <div class="metric-label">
-                {label}
+    color = aqi_color(value)
+    st.html(
+        textwrap.dedent(
+            f"""
+            <div class="metric-card" style="--bar-color:{color};">
+                <div class="metric-label">
+                    {label}
+                </div>
+                <div class="metric-value">
+                    {value:.1f}
+                </div>
+                <div class="metric-category" style="background:{color}22; color:{color}; border:1px solid {color}55;">
+                    {category}
+                </div>
             </div>
-            <div class="metric-value">
-                {value:.1f}
-            </div>
-            <div class="metric-category">
-                {category}
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
+            """
+        )
     )
 
 
@@ -256,85 +432,79 @@ def pollutant_card(
     value: object,
     suffix: str,
 ) -> None:
-    st.markdown(
-        f"""
-        <div class="info-card">
-            <div class="metric-label">
-                {label}
+    st.html(
+        textwrap.dedent(
+            f"""
+            <div class="info-card">
+                <div class="metric-label">
+                    {label}
+                </div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:23px;font-weight:600;margin-top:8px;color:#eef1f6;">
+                    {format_value(value, suffix)}
+                </div>
             </div>
-            <div style="font-size:24px;font-weight:700;margin-top:6px;">
-                {format_value(value, suffix)}
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
+            """
+        )
     )
 
 
 def build_aqi_gauge(
     current_aqi: float,
 ) -> go.Figure:
+    needle_color = aqi_color(current_aqi)
+
     figure = go.Figure(
         go.Indicator(
             mode="gauge+number",
             value=current_aqi,
             number={
                 "font": {
-                    "size": 44,
-                }
+                    "size": 46,
+                    "family": "JetBrains Mono, monospace",
+                    "color": needle_color,
+                },
             },
             title={
-                "text": "Current AQI",
+                "text": "CURRENT AQI",
+                "font": {
+                    "size": 13,
+                    "family": "JetBrains Mono, monospace",
+                    "color": "#8891a3",
+                },
             },
             gauge={
                 "axis": {
                     "range": [0, 500],
                     "tickwidth": 1,
+                    "tickcolor": "rgba(255,255,255,0.25)",
+                    "tickfont": {"color": "#6b7688", "size": 10},
                 },
                 "bar": {
-                    "thickness": 0.25,
+                    "color": needle_color,
+                    "thickness": 0.28,
                 },
+                "bgcolor": "rgba(255,255,255,0.02)",
+                "borderwidth": 0,
                 "steps": [
-                    {
-                        "range": [0, 50],
-                        "color": "#2b8750",
-                    },
-                    {
-                        "range": [50, 100],
-                        "color": "#a08a2e",
-                    },
-                    {
-                        "range": [100, 150],
-                        "color": "#a5682e",
-                    },
-                    {
-                        "range": [150, 200],
-                        "color": "#993d42",
-                    },
-                    {
-                        "range": [200, 300],
-                        "color": "#71418c",
-                    },
-                    {
-                        "range": [300, 500],
-                        "color": "#662f3c",
-                    },
+                    {"range": [lo, hi], "color": f"{color}33"}
+                    for lo, hi, color, _ in AQI_BANDS
                 ],
             },
         )
     )
 
     figure.update_layout(
-        height=310,
+        height=320,
         margin=dict(
             l=30,
             r=30,
-            t=55,
+            t=60,
             b=20,
         ),
         paper_bgcolor="rgba(0,0,0,0)",
         font={
             "color": "white",
+            "family": "Space Grotesk, sans-serif",
         },
     )
 
@@ -344,55 +514,53 @@ def build_aqi_gauge(
 def forecast_chart(
     data: dict,
 ) -> go.Figure:
-    forecast_df = pd.DataFrame(
-        {
-            "Period": [
-                "Current",
-                "+24h",
-                "+48h",
-                "+72h",
-            ],
-            "AQI": [
-                data["current_aqi"],
-                data["forecast"]["24h"],
-                data["forecast"]["48h"],
-                data["forecast"]["72h"],
-            ],
-        }
-    )
+    periods = ["Current", "+24h", "+48h", "+72h"]
+    values = [
+        data["current_aqi"],
+        data["forecast"]["24h"],
+        data["forecast"]["48h"],
+        data["forecast"]["72h"],
+    ]
 
-    figure = px.line(
-        forecast_df,
-        x="Period",
-        y="AQI",
-        markers=True,
-    )
+    figure = go.Figure()
 
-    figure.update_traces(
-        line={
-            "width": 4,
-        },
-        marker={
-            "size": 10,
-        },
+    figure.add_trace(
+        go.Scatter(
+            x=periods,
+            y=values,
+            mode="lines+markers",
+            line=dict(
+                width=3,
+                color="#34d8b0",
+                shape="spline",
+            ),
+            marker=dict(
+                size=12,
+                color=[aqi_color(v) for v in values],
+                line=dict(width=2, color="#05070a"),
+            ),
+            fill="tozeroy",
+            fillcolor="rgba(52,216,176,0.08)",
+            hovertemplate="%{x}: <b>%{y:.0f}</b> AQI<extra></extra>",
+        )
     )
 
     figure.update_layout(
-        title="AQI Forecast Trend",
-        height=310,
-        margin=dict(
-            l=20,
-            r=20,
-            t=60,
-            b=20,
-        ),
+        title={
+            "text": "AQI FORECAST TREND",
+            "font": {"size": 13, "family": "JetBrains Mono, monospace", "color": "#8891a3"},
+        },
+        height=320,
+        margin=dict(l=20, r=20, t=60, b=20),
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
-        font={
-            "color": "white",
-        },
+        font={"color": "white", "family": "Space Grotesk, sans-serif"},
         yaxis_title="AQI",
         xaxis_title=None,
+        yaxis=dict(gridcolor="rgba(255,255,255,0.06)", zeroline=False),
+        xaxis=dict(gridcolor="rgba(255,255,255,0.03)"),
+        showlegend=False,
+        hovermode="x unified",
     )
 
     return figure
@@ -416,16 +584,22 @@ def shap_chart(
         orientation="h",
         color="direction",
         color_discrete_map={
-            "increase": "#ef6262",
-            "decrease": "#52b788",
+            "increase": "#ef4444",
+            "decrease": "#34d8b0",
         },
+    )
+
+    figure.update_traces(
+        marker_line_width=0,
+        opacity=0.9,
     )
 
     figure.update_layout(
         title=(
             f"{explanation['horizon']} "
-            "Forecast Feature Contributions"
-        ),
+            "FORECAST FEATURE CONTRIBUTIONS"
+        ).upper(),
+        title_font={"size": 13, "family": "JetBrains Mono, monospace", "color": "#8891a3"},
         xaxis_title="SHAP contribution",
         yaxis_title=None,
         height=400,
@@ -433,8 +607,11 @@ def shap_chart(
         plot_bgcolor="rgba(0,0,0,0)",
         font={
             "color": "white",
+            "family": "Space Grotesk, sans-serif",
         },
         legend_title=None,
+        xaxis=dict(gridcolor="rgba(255,255,255,0.06)", zeroline=False),
+        yaxis=dict(gridcolor="rgba(255,255,255,0.03)"),
     )
 
     return figure
@@ -465,7 +642,7 @@ def show_explanation(
 
     st.plotly_chart(
         shap_chart(explanation),
-        use_container_width=True,
+        width='stretch',
         config={
             "displayModeBar": False,
         },
@@ -485,15 +662,27 @@ def show_explanation(
                 "direction",
             ]
         ],
-        use_container_width=True,
+        width='stretch',
         hide_index=True,
     )
 
 
 def render_sidebar() -> tuple[str, bool]:
     with st.sidebar:
-        st.markdown(
-            "## 🌍 AQI Predictor"
+        st.html(
+            textwrap.dedent(
+                """
+                <div style="padding: 4px 0 14px;">
+                    <div style="font-size:22px;font-weight:700;letter-spacing:-0.01em;">
+                        🌍 AQI Predictor
+                    </div>
+                    <div style="font-family:'JetBrains Mono',monospace;font-size:11px;
+                                color:#6b7688;letter-spacing:0.06em;margin-top:2px;">
+                        v2.0 · PEARLS
+                    </div>
+                </div>
+                """
+            )
         )
 
         st.caption(
@@ -509,7 +698,7 @@ def render_sidebar() -> tuple[str, bool]:
 
         refresh = st.button(
             "↻ Refresh Live Data",
-            use_container_width=True,
+            width='stretch',
             type="primary",
         )
 
@@ -548,35 +737,39 @@ def render_hero(
     city: str,
     updated: datetime | None,
 ) -> None:
-    st.markdown(
-        f"""
-        <div class="hero">
-            <div style="
-                display:flex;
-                justify-content:space-between;
-                align-items:center;
-                gap:20px;
-            ">
-                <div>
-                    <div class="hero-title">
-                        🌍 Pearls AQI Predictor
+    st.html(
+        textwrap.dedent(
+            f"""
+            <div class="hero">
+                <div style="
+                    position:relative; z-index:1;
+                    display:flex;
+                    justify-content:space-between;
+                    align-items:flex-start;
+                    gap:20px;
+                    flex-wrap: wrap;
+                ">
+                    <div>
+                        <div class="eyebrow">● machine learning · live inference</div>
+                        <div class="hero-title">
+                            Pearls AQI Predictor
+                        </div>
+                        <div class="hero-subtitle">
+                            Real-time air quality intelligence with ML forecasting
+                            and explainable, feature-level predictions.
+                        </div>
+                        <div class="hero-meta">
+                            {city.upper()} &nbsp;/&nbsp; LAST UPDATED {format_updated(updated).upper()}
+                        </div>
                     </div>
-                    <div class="hero-subtitle">
-                        Real-time air quality intelligence,
-                        ML forecasting and explainable predictions
-                    </div>
-                    <div class="hero-subtitle" style="margin-top:8px;">
-                        {city} • Last updated {format_updated(updated)}
-                    </div>
-                </div>
 
-                <div class="live-pill">
-                    ● LIVE
+                    <div class="live-pill">
+                        <span class="live-dot"></span> LIVE
+                    </div>
                 </div>
             </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
+            """
+        )
     )
 
 
@@ -683,7 +876,7 @@ def render_model_performance() -> None:
 
     st.dataframe(
         metrics,
-        use_container_width=True,
+        width='stretch',
         hide_index=True,
     )
 
@@ -739,6 +932,8 @@ def main() -> None:
 
     render_kpi_cards(data)
 
+    st.write("")
+
     left, right = st.columns(
         [
             0.38,
@@ -751,7 +946,7 @@ def main() -> None:
             build_aqi_gauge(
                 float(data["current_aqi"])
             ),
-            use_container_width=True,
+            width='stretch',
             config={
                 "displayModeBar": False,
             },
@@ -760,7 +955,7 @@ def main() -> None:
     with right:
         st.plotly_chart(
             forecast_chart(data),
-            use_container_width=True,
+            width='stretch',
             config={
                 "displayModeBar": False,
             },
@@ -831,15 +1026,16 @@ def main() -> None:
 
         render_model_performance()
 
-        st.markdown(
-            """
-            <div class="info-card">
-                <strong>Model:</strong> Ridge Regression<br>
-                <strong>Forecast horizons:</strong> 24h, 48h, 72h<br>
-                <strong>Evaluation split:</strong> leakage-safe temporal test set
-            </div>
-            """,
-            unsafe_allow_html=True,
+        st.html(
+            textwrap.dedent(
+                """
+                <div class="info-card">
+                    <strong>Model:</strong> Ridge Regression<br>
+                    <strong>Forecast horizons:</strong> 24h, 48h, 72h<br>
+                    <strong>Evaluation split:</strong> leakage-safe temporal test set
+                </div>
+                """
+            )
         )
 
     with system_tab:
@@ -848,17 +1044,19 @@ def main() -> None:
         )
 
         st.markdown(
-            """
-            **Live APIs**
-            → **Feature Engineering**
-            → **Feast**
-            → **MLflow Model Registry**
-            → **Ridge Models**
-            → **FastAPI**
-            → **Streamlit**
+            textwrap.dedent(
+                """
+                **Live APIs**
+                → **Feature Engineering**
+                → **Feast**
+                → **MLflow Model Registry**
+                → **Ridge Models**
+                → **FastAPI**
+                → **Streamlit**
 
-            ---
-            """
+                ---
+                """
+            )
         )
 
         c1, c2, c3, c4 = st.columns(4)
@@ -883,16 +1081,17 @@ def main() -> None:
             "MLflow",
         )
 
-        st.markdown(
-            f"""
-            <div class="info-card">
-                <strong>Feature source:</strong> {data["feature_source"]}<br>
-                <strong>Model source:</strong> {data["model_source"]}<br>
-                <strong>Serving API:</strong> FastAPI<br>
-                <strong>Dashboard:</strong> Streamlit
-            </div>
-            """,
-            unsafe_allow_html=True,
+        st.html(
+            textwrap.dedent(
+                f"""
+                <div class="info-card">
+                    <strong>Feature source:</strong> {data["feature_source"]}<br>
+                    <strong>Model source:</strong> {data["model_source"]}<br>
+                    <strong>Serving API:</strong> FastAPI<br>
+                    <strong>Dashboard:</strong> Streamlit
+                </div>
+                """
+            )
         )
 
 
