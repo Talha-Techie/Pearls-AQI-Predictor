@@ -33,6 +33,10 @@ class FeatureRefreshResponse(BaseModel):
     current_aqi: float
     pm2_5: float
     pm10: float
+    ozone: float | None = None
+    nitrogen_dioxide: float | None = None
+    carbon_monoxide: float | None = None
+    sulphur_dioxide: float | None = None
 
 
 class HealthResponse(BaseModel):

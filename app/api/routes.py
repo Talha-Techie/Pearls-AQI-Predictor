@@ -97,6 +97,26 @@ def refresh_features() -> FeatureRefreshResponse:
             pm10=float(
                 row["pm10"]
             ),
+            ozone=(
+                float(row["ozone"])
+                if "ozone" in row
+                else None
+            ),
+            nitrogen_dioxide=(
+                float(row["nitrogen_dioxide"])
+                if "nitrogen_dioxide" in row
+                else None
+            ),
+            carbon_monoxide=(
+                float(row["carbon_monoxide"])
+                if "carbon_monoxide" in row
+                else None
+            ),
+            sulphur_dioxide=(
+                float(row["sulphur_dioxide"])
+                if "sulphur_dioxide" in row
+                else None
+            ),
         )
 
     except Exception as exc:
