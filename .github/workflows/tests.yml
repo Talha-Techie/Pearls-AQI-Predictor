@@ -19,6 +19,14 @@ jobs:
     name: Python 3.13 Test Suite
     runs-on: ubuntu-latest
 
+    env:
+      APP_ENV: test
+      CITY: Lahore
+      LATITUDE: "31.5204"
+      LONGITUDE: "74.3587"
+      TIMEZONE: Asia/Karachi
+      HTTP_TIMEOUT_SECONDS: "15"
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -44,4 +52,10 @@ jobs:
 
       - name: Run test suite
         run: |
-          pytest -v -p no:cacheprovider
+          pytest -v -p no:cacheprovideenv:
+env:
+  CITY: Lahore
+  LATITUDE: "31.5204"
+  LONGITUDE: "74.3587"
+  TIMEZONE: Asia/Karachi
+  HTTP_TIMEOUT_SECONDS: "15"
