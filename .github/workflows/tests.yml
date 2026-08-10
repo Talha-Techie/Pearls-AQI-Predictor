@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      APP_ENV: test
+      APP_ENV: development
       CITY: Lahore
       LATITUDE: "31.5204"
       LONGITUDE: "74.3587"
@@ -52,10 +52,4 @@ jobs:
 
       - name: Run test suite
         run: |
-          pytest -v -p no:cacheprovideenv:
-env:
-  CITY: Lahore
-  LATITUDE: "31.5204"
-  LONGITUDE: "74.3587"
-  TIMEZONE: Asia/Karachi
-  HTTP_TIMEOUT_SECONDS: "15"
+          pytest -v -p no:cacheprovider
