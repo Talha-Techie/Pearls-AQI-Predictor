@@ -21,7 +21,7 @@ statsmodels==0.15.0
 torch==2.13.0
 
 # Feature Store / MLOps
-feast==0.66.0
+feast[redis]==0.66.0
 mlflow==3.15.2
 dagshub==0.7.1
 
