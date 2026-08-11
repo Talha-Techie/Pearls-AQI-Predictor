@@ -21,7 +21,6 @@ jobs:
       LONGITUDE: "74.3587"
       TIMEZONE: Asia/Karachi
       HTTP_TIMEOUT_SECONDS: "30"
-      REDIS_CONNECTION_STRING: ${{ secrets.REDIS_CONNECTION_STRING }}
 
     steps:
       - name: Checkout repository
@@ -38,11 +37,26 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Validate Redis configuration
+        env:
+          REDIS_CONNECTION_STRING: ${{ secrets.REDIS_CONNECTION_STRING }}
+        run: |
+          if [ -z "$REDIS_CONNECTION_STRING" ]; then
+            echo "REDIS_CONNECTION_STRING secret is missing or empty"
+            exit 1
+          fi
+
+          echo "Redis configuration is available"
+
       - name: Apply Feast definitions
         working-directory: feature_repo
+        env:
+          REDIS_CONNECTION_STRING: ${{ secrets.REDIS_CONNECTION_STRING }}
         run: |
           feast apply
 
       - name: Run hourly live feature pipeline
+        env:
+          REDIS_CONNECTION_STRING: ${{ secrets.REDIS_CONNECTION_STRING }}
         run: |
           python -m app.feature_pipeline.live_pipeline
