@@ -12,7 +12,12 @@ import pandas as pd
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from app.config.settings import get_settings
-
+from tenacity import (
+    retry,
+    stop_after_attempt,
+    wait_exponential,
+)
+import httpx
 
 settings = get_settings()
 
@@ -48,17 +53,47 @@ class BackfillError(RuntimeError):
 
 
 @retry(
-    stop=stop_after_attempt(3),
-    wait=wait_exponential(multiplier=1, min=1, max=8),
+    stop=stop_after_attempt(6),
+    wait=wait_exponential(
+        multiplier=2,
+        min=2,
+        max=30,
+    ),
+    reraise=True,
+)
+@retry(
+    stop=stop_after_attempt(6),
+    wait=wait_exponential(
+        multiplier=2,
+        min=2,
+        max=30,
+    ),
     reraise=True,
 )
 def _request_json(
     url: str,
     params: dict[str, Any],
 ) -> dict[str, Any]:
-    with httpx.Client(timeout=settings.http_timeout_seconds) as client:
-        response = client.get(url, params=params)
+    timeout_seconds = max(
+        float(settings.http_timeout_seconds),
+        60.0,
+    )
+
+    timeout = httpx.Timeout(
+        timeout_seconds
+    )
+
+    with httpx.Client(
+        timeout=timeout,
+        follow_redirects=True,
+    ) as client:
+        response = client.get(
+            url,
+            params=params,
+        )
+
         response.raise_for_status()
+
         return response.json()
 
 
