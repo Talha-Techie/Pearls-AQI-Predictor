@@ -15,9 +15,13 @@ from app.feature_pipeline.engineer import (
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 FEATURE_REPO = PROJECT_ROOT / "feature_repo"
 
+# Prevent Feast/Dask from creating a huge
+# city-level point-in-time join in memory.
+RETRIEVAL_BATCH_SIZE = 128
+
 
 class FeastTrainingDataError(RuntimeError):
-    """Raised when historical Feast training data cannot be built."""
+    """Raised when Feast training data cannot be prepared."""
 
 
 def build_training_dataset(
@@ -51,25 +55,31 @@ def build_training_dataset(
             f"{missing_columns}"
         )
 
-    entity_df = labels_df[
-        [
-            "city",
-            "timestamp",
-            *TARGET_COLUMNS,
-        ]
+    labels_df = labels_df[
+        required_columns
     ].copy()
 
-    entity_df = entity_df.rename(
-        columns={
-            "timestamp": "event_timestamp",
-        }
+    labels_df["timestamp"] = pd.to_datetime(
+        labels_df["timestamp"],
+        utc=True,
     )
 
-    entity_df["event_timestamp"] = (
-        pd.to_datetime(
-            entity_df["event_timestamp"],
-            utc=True,
+    labels_df = (
+        labels_df
+        .sort_values(
+            [
+                "city",
+                "timestamp",
+            ]
         )
+        .drop_duplicates(
+            subset=[
+                "city",
+                "timestamp",
+            ],
+            keep="last",
+        )
+        .reset_index(drop=True)
     )
 
     store = FeatureStore(
@@ -84,23 +94,144 @@ def build_training_dataset(
         )
     )
 
-    retrieval_job = (
-        store.get_historical_features(
-            features=feature_service,
-            entity_df=entity_df,
+    total_rows = len(
+        labels_df
+    )
+
+    total_batches = (
+        total_rows
+        + RETRIEVAL_BATCH_SIZE
+        - 1
+    ) // RETRIEVAL_BATCH_SIZE
+
+    print(
+        "\nFeast Historical Feature Retrieval"
+    )
+    print(
+        "----------------------------------"
+    )
+    print(
+        f"Rows requested:  {total_rows:,}"
+    )
+    print(
+        f"Batch size:      "
+        f"{RETRIEVAL_BATCH_SIZE}"
+    )
+    print(
+        f"Total batches:   "
+        f"{total_batches}"
+    )
+
+    retrieved_batches: list[
+        pd.DataFrame
+    ] = []
+
+    for batch_number, start_index in enumerate(
+        range(
+            0,
+            total_rows,
+            RETRIEVAL_BATCH_SIZE,
+        ),
+        start=1,
+    ):
+        end_index = min(
+            start_index
+            + RETRIEVAL_BATCH_SIZE,
+            total_rows,
         )
-    )
 
-    historical_df = (
-        retrieval_job.to_df()
-    )
+        print(
+            f"Retrieving batch "
+            f"{batch_number}/{total_batches} "
+            f"(rows {start_index + 1:,}"
+            f"-{end_index:,})...",
+            flush=True,
+        )
 
-    historical_df = (
-        historical_df.rename(
+        # Keep only entity + event time in the
+        # Feast query. Targets are joined later.
+        entity_batch = labels_df.iloc[
+            start_index:end_index
+        ][
+            [
+                "city",
+                "timestamp",
+            ]
+        ].copy()
+
+        entity_batch = entity_batch.rename(
             columns={
-                "event_timestamp": "timestamp",
+                "timestamp":
+                    "event_timestamp",
             }
         )
+
+        retrieval_job = (
+            store.get_historical_features(
+                features=feature_service,
+                entity_df=entity_batch,
+            )
+        )
+
+        batch_df = retrieval_job.to_df()
+
+        batch_df = batch_df.rename(
+            columns={
+                "event_timestamp":
+                    "timestamp",
+            }
+        )
+
+        batch_df["timestamp"] = (
+            pd.to_datetime(
+                batch_df["timestamp"],
+                utc=True,
+            )
+        )
+
+        retrieved_batches.append(
+            batch_df
+        )
+
+    if not retrieved_batches:
+        raise FeastTrainingDataError(
+            "Feast returned no historical batches."
+        )
+
+    features_df = pd.concat(
+        retrieved_batches,
+        ignore_index=True,
+    )
+
+    features_df = (
+        features_df
+        .sort_values(
+            [
+                "city",
+                "timestamp",
+            ]
+        )
+        .drop_duplicates(
+            subset=[
+                "city",
+                "timestamp",
+            ],
+            keep="last",
+        )
+        .reset_index(drop=True)
+    )
+
+    #
+    # Join forecast targets AFTER Feast retrieval.
+    #
+    historical_df = features_df.merge(
+        labels_df,
+        on=[
+            "city",
+            "timestamp",
+        ],
+        how="inner",
+        validate="one_to_one",
     )
 
     required_output = [
@@ -118,7 +249,8 @@ def build_training_dataset(
 
     if missing_output:
         raise FeastTrainingDataError(
-            "Feast historical retrieval is missing: "
+            "Historical training data is "
+            "missing columns: "
             f"{missing_output}"
         )
 
@@ -135,19 +267,13 @@ def build_training_dataset(
                 "timestamp",
             ]
         )
-        .drop_duplicates(
-            subset=[
-                "city",
-                "timestamp",
-            ],
-            keep="last",
-        )
         .reset_index(drop=True)
     )
 
     if historical_df.empty:
         raise FeastTrainingDataError(
-            "Feast returned no usable training rows."
+            "Feast returned no usable "
+            "training rows."
         )
 
     output_path.parent.mkdir(
@@ -182,11 +308,22 @@ def build_training_dataset(
         f"Missing values: "
         f"{historical_df.isna().sum().sum()}"
     )
+
     print(
-        f"\nRange:"
-        f"\n{historical_df['timestamp'].min()}"
-        f"\n→ {historical_df['timestamp'].max()}"
+        "\nRange:"
     )
+    print(
+        historical_df[
+            "timestamp"
+        ].min()
+    )
+    print(
+        "→",
+        historical_df[
+            "timestamp"
+        ].max()
+    )
+
     print(
         f"\nSaved to:\n"
         f"{output_path.resolve()}"
@@ -198,8 +335,8 @@ def build_training_dataset(
 def main() -> None:
     parser = argparse.ArgumentParser(
         description=(
-            "Retrieve historical AQI training "
-            "features through Feast."
+            "Retrieve historical AQI "
+            "training features through Feast."
         )
     )
 
