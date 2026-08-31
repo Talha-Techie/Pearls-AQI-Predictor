@@ -13,7 +13,7 @@ import sys
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 FEATURE_REPO = PROJECT_ROOT / "feature_repo"
 
-START_DATE = "2023-01-01"
+TRAINING_LOOKBACK_DAYS = 365
 
 
 def run_command(
@@ -33,15 +33,22 @@ def run_command(
 
 
 def main() -> None:
-    end_date = (
+    yesterday = (
         datetime.now(
             timezone.utc
         ).date()
         - timedelta(days=1)
+    )
+
+    start_date = (
+        yesterday
+        - timedelta(days=TRAINING_LOOKBACK_DAYS)
     ).isoformat()
 
+    end_date = yesterday.isoformat()
+
     suffix = (
-        f"{START_DATE}_{end_date}"
+        f"{start_date}_{end_date}"
     )
 
     historical_path = (
@@ -79,7 +86,7 @@ def main() -> None:
     )
     print(
         f"Historical range: "
-        f"{START_DATE} -> {end_date}"
+        f"{start_date} -> {end_date}"
     )
 
     # 1. Historical backfill
@@ -89,7 +96,7 @@ def main() -> None:
             "-m",
             "app.feature_pipeline.backfill",
             "--start",
-            START_DATE,
+            start_date,
             "--end",
             end_date,
         ]
