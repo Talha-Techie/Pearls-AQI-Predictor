@@ -51,6 +51,7 @@ def root() -> dict:
 
 
 @app.get("/health")
+@app.get("/api/health")
 def health() -> dict:
     return {
         "status": "healthy",
