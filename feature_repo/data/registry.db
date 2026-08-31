@@ -1,0 +1,175 @@
+
+p
+P
+city*City for which AQI features are generated."cityJpearls_aqi_predictor
+ôêÔÔÀ×Ç¢ôêÔÔÀ×Ç¢
+K
++
+__dummy"
+__dummy_idJpearls_aqi_predictor
+ôêÔÔØµ¦¢ôêÔÔ˜ÛØ¢1"$a890062e-fd0d-4fd1-be42-0d320914ac3d*’±ÕÔğË±2¾
+
+
+
+aqi_hourly_featurespearls_aqi_predictorcity"
+temperature_2m"
+relative_humidity_2m"
+precipitation"
+pressure_msl"
+wind_speed_10m"
+wind_direction_sin"
+wind_direction_cos"
+pm10"	
+pm2_5"
+carbon_monoxide"
+nitrogen_dioxide"
+sulphur_dioxide"	
+ozone"
+
+us_aqi"
+hour"
+day_of_week"	
+month"
+
+is_weekend"
+hour_sin"
+hour_cos"
+day_of_week_sin"
+day_of_week_cos"
+	month_sin"
+	month_cos"
+
+aqi_lag_1h"
+
+aqi_lag_3h"
+
+aqi_lag_6h"
+aqi_lag_12h"
+aqi_lag_24h"
+pm2_5_lag_1h"
+pm2_5_lag_6h"
+pm2_5_lag_24h"
+pm10_lag_24h"
+aqi_rolling_mean_6h"
+aqi_rolling_mean_12h"
+aqi_rolling_mean_24h"
+aqi_rolling_std_24h"
+pm2_5_rolling_mean_6h"
+pm2_5_rolling_mean_24h"
+pm10_rolling_mean_24h"
+aqi_change_1h"
+aqi_change_rate_1h2€†°–:“	timestampZdata/aqi_features.parquetŠ1feast.infra.offline_stores.file_source.FileSource¢aqi_features_source’ôêÔÔğº‘"ôêÔÔè¡¡@JÈ		timestampŠfeast.data_source.PushSource¢aqi_features_push_sourceÒ_	timestampZdata/aqi_features.parquet¢aqi_features_source’ôêÔÔğº‘"ôêÔÔè¡¡’ôêÔÔèÎÁ‘"ôêÔÔ€Ù‹¡RQInference-safe hourly weather, pollution, temporal, lag and rolling AQI features.b
+city’latest
+ôêÔÔ˜å®¡ôêÔÔ˜å®¡:ô
+Ó
+aqi_prediction_features_v1pearls_aqi_predictor
+aqi_hourly_features
+temperature_2m
+relative_humidity_2m
+precipitation
+pressure_msl
+wind_speed_10m
+wind_direction_sin
+wind_direction_cos
+pm10	
+pm2_5
+carbon_monoxide
+nitrogen_dioxide
+sulphur_dioxide	
+ozone
+
+us_aqi
+hour
+day_of_week	
+month
+
+is_weekend
+hour_sin
+hour_cos
+day_of_week_sin
+day_of_week_cos
+	month_sin
+	month_cos
+
+aqi_lag_1h
+
+aqi_lag_3h
+
+aqi_lag_6h
+aqi_lag_12h
+aqi_lag_24h
+pm2_5_lag_1h
+pm2_5_lag_6h
+pm2_5_lag_24h
+pm10_lag_24h
+aqi_rolling_mean_6h
+aqi_rolling_mean_12h
+aqi_rolling_mean_24h
+aqi_rolling_std_24h
+pm2_5_rolling_mean_6h
+pm2_5_rolling_mean_24h
+pm10_rolling_mean_24h
+aqi_change_1h
+aqi_change_rate_1hB_	timestampZdata/aqi_features.parquet¢aqi_features_source’ôêÔÔğº‘"ôêÔÔè¡¡ZfeatureView
+ôêÔÔà‡ì¢ôêÔÔà‡ì¢R¥
+¢
+,feast.infra.online_stores.sqlite.SqliteTable"r
+FE:\Projects\AQI\Pearls-AQI-Predictor\feature_repo\data\online_store.db(pearls_aqi_predictor_aqi_hourly_featuresbß		timestampŠfeast.data_source.PushSource¢aqi_features_push_sourceªpearls_aqi_predictorÒ_	timestampZdata/aqi_features.parquet¢aqi_features_source’ôêÔÔğº‘"ôêÔÔğº‘’ôêÔÔèÎÁ‘"ôêÔÔ€Ù‹¡bª	timestampZdata/aqi_features.parquetŠ1feast.infra.offline_stores.file_source.FileSource¢aqi_features_sourceªpearls_aqi_predictor’ôêÔÔğº‘"ôêÔÔè¡¡Š6
+
+pearls_aqi_predictor
+ôêÔÔ°şÍ“ôêÔÔ°şÍ“’±
+®
+aqi_hourly_featurespearls_aqi_predictor"feature_view*¾
+
+
+
+aqi_hourly_featurespearls_aqi_predictorcity"
+temperature_2m"
+relative_humidity_2m"
+precipitation"
+pressure_msl"
+wind_speed_10m"
+wind_direction_sin"
+wind_direction_cos"
+pm10"	
+pm2_5"
+carbon_monoxide"
+nitrogen_dioxide"
+sulphur_dioxide"	
+ozone"
+
+us_aqi"
+hour"
+day_of_week"	
+month"
+
+is_weekend"
+hour_sin"
+hour_cos"
+day_of_week_sin"
+day_of_week_cos"
+	month_sin"
+	month_cos"
+
+aqi_lag_1h"
+
+aqi_lag_3h"
+
+aqi_lag_6h"
+aqi_lag_12h"
+aqi_lag_24h"
+pm2_5_lag_1h"
+pm2_5_lag_6h"
+pm2_5_lag_24h"
+pm10_lag_24h"
+aqi_rolling_mean_6h"
+aqi_rolling_mean_12h"
+aqi_rolling_mean_24h"
+aqi_rolling_std_24h"
+pm2_5_rolling_mean_6h"
+pm2_5_rolling_mean_24h"
+pm10_rolling_mean_24h"
+aqi_change_1h"
+aqi_change_rate_1h2€†°–:“	timestampZdata/aqi_features.parquetŠ1feast.infra.offline_stores.file_source.FileSource¢aqi_features_source’ôêÔÔğº‘"ôêÔÔè¡¡@JÈ		timestampŠfeast.data_source.PushSource¢aqi_features_push_sourceÒ_	timestampZdata/aqi_features.parquet¢aqi_features_source’ôêÔÔğº‘"ôêÔÔè¡¡’ôêÔÔèÎÁ‘"ôêÔÔ€Ù‹¡RQInference-safe hourly weather, pollution, temporal, lag and rolling AQI features.b
+city’latest
+ôêÔÔ˜å®¡ôêÔÔ˜å®¡2ôêÔÔ¨İ¢B$c406bad8-aaae-4e29-8ac7-d44e238cbff5

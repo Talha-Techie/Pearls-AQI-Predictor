@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 from functools import lru_cache
-from pathlib import Path
-
 import numpy as np
 import pandas as pd
 import shap
@@ -14,14 +12,14 @@ from app.prediction.service import (
 )
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+# PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
-BACKGROUND_DATASET = (
-    PROJECT_ROOT
-    / "data"
-    / "processed"
-    / "features_aqi_history_2023-01-01_2026-07-29.parquet"
-)
+# BACKGROUND_DATASET = (
+#     PROJECT_ROOT
+#     / "data"
+#     / "processed"
+#     / "features_aqi_history_2023-01-01_2026-07-29.parquet"
+# )
 
 
 class ExplanationServiceError(RuntimeError):
@@ -39,28 +37,28 @@ def _get_pipeline_step(
     raise KeyError(names)
 
 
-@lru_cache(maxsize=1)
-def load_background_data() -> pd.DataFrame:
-    dataframe = pd.read_parquet(
-        BACKGROUND_DATASET,
-        columns=MODEL_FEATURE_COLUMNS,
-    )
+# @lru_cache(maxsize=1)
+# def load_background_data() -> pd.DataFrame:
+#     dataframe = pd.read_parquet(
+#         BACKGROUND_DATASET,
+#         columns=MODEL_FEATURE_COLUMNS,
+#     )
 
-    if dataframe.empty:
-        raise ExplanationServiceError(
-            "SHAP background dataset is empty."
-        )
+    # if dataframe.empty:
+    #     raise ExplanationServiceError(
+    #         "SHAP background dataset is empty."
+    #     )
 
-    # Small representative sample keeps explanation fast.
-    sample_size = min(
-        500,
-        len(dataframe),
-    )
+    # # Small representative sample keeps explanation fast.
+    # sample_size = min(
+    #     500,
+    #     len(dataframe),
+    # )
 
-    return dataframe.sample(
-        n=sample_size,
-        random_state=42,
-    )
+    # return dataframe.sample(
+    #     n=sample_size,
+    #     random_state=42,
+    # )
 
 
 def explain_horizon(
@@ -116,11 +114,13 @@ def explain_horizon(
             "Expected StandardScaler + Ridge pipeline."
         ) from exc
 
-    background = load_background_data()
-
-    background_scaled = scaler.transform(
-        background
-    )
+    background_scaled = np.zeros(
+    (
+        1,
+        len(MODEL_FEATURE_COLUMNS),
+    ),
+    dtype=float,
+)
 
     current_scaled = scaler.transform(
         features
