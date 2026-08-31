@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-
+import argparse
 import joblib
 import mlflow
 import mlflow.sklearn
@@ -26,12 +26,7 @@ METRICS_PATH = (
     / "final_test_metrics.csv"
 )
 
-DATASET_PATH = (
-    PROJECT_ROOT
-    / "data"
-    / "processed"
-    / "features_aqi_history_2023-01-01_2026-07-29.parquet"
-)
+
 
 MODELS = {
     "24h": MODEL_DIR / "aqi_ridge_24h.joblib",
@@ -60,15 +55,17 @@ def configure_mlflow() -> None:
     )
 
 
-def register_models() -> None:
+def register_models(
+    dataset_path: Path,
+) -> None:
     configure_mlflow()
 
     metrics = pd.read_csv(METRICS_PATH)
 
     training_df = pd.read_parquet(
-        DATASET_PATH,
-        columns=MODEL_FEATURE_COLUMNS,
-    )
+    dataset_path,
+    columns=MODEL_FEATURE_COLUMNS,
+)
 
     input_example = training_df.iloc[[0]].copy()
 
@@ -157,6 +154,26 @@ def register_models() -> None:
                 f"Model URI: {result.model_uri}"
             )
 
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description=(
+            "Register AQI champion models "
+            "in MLflow Model Registry."
+        )
+    )
+
+    parser.add_argument(
+        "--input",
+        required=True,
+        type=Path,
+    )
+
+    args = parser.parse_args()
+
+    register_models(
+        dataset_path=args.input
+    )
+
 
 if __name__ == "__main__":
-    register_models()
+    main()

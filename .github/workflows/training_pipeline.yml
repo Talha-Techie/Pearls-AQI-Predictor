@@ -25,8 +25,9 @@ jobs:
 
       REDIS_CONNECTION_STRING: ${{ secrets.REDIS_CONNECTION_STRING }}
 
-      DAGSHUB_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}
-      DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
+      MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
+      MLFLOW_TRACKING_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}
+      MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
 
     steps:
       - name: Checkout repository
@@ -43,19 +44,24 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Apply Feast definitions
-        working-directory: feature_repo
+      - name: Validate training secrets
         run: |
-          feast apply
+          test -n "$REDIS_CONNECTION_STRING"
+          test -n "$MLFLOW_TRACKING_URI"
+          test -n "$MLFLOW_TRACKING_USERNAME"
+          test -n "$MLFLOW_TRACKING_PASSWORD"
+          echo "Required training secrets are available"
 
       - name: Run daily training pipeline
         run: |
           python -m app.training_pipeline.daily_pipeline
 
-      - name: Upload benchmark reports
+      - name: Upload training reports
         if: always()
         uses: actions/upload-artifact@v6
         with:
-          name: aqI-training-reports
-          path: reports/model_benchmarks/
+          name: aqi-training-reports
+          path: |
+            reports/model_benchmarks/
+            artifacts/models/
           if-no-files-found: warn
