@@ -19,7 +19,7 @@ jobs:
       APP_ENV: production
       CITY: Lahore
       LATITUDE: "31.5204"
-      LONGITUDE: "74.3587"-
+      LONGITUDE: "74.3587"
       TIMEZONE: Asia/Karachi
       HTTP_TIMEOUT_SECONDS: "90"
 
