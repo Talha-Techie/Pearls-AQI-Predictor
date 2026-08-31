@@ -1,0 +1,27 @@
+warning: in the working copy of '.github/workflows/tests.yml', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/.github/workflows/tests.yml b/.github/workflows/tests.yml[m
+[1mindex dd5d817..6d38570 100644[m
+[1m--- a/.github/workflows/tests.yml[m
+[1m+++ b/.github/workflows/tests.yml[m
+[36m@@ -20,7 +20,7 @@[m [mjobs:[m
+     runs-on: ubuntu-latest[m
+ [m
+     env:[m
+[31m-      APP_ENV: test[m
+[32m+[m[32m      APP_ENV: development[m
+       CITY: Lahore[m
+       LATITUDE: "31.5204"[m
+       LONGITUDE: "74.3587"[m
+[36m@@ -52,10 +52,4 @@[m [mjobs:[m
+ [m
+       - name: Run test suite[m
+         run: |[m
+[31m-          pytest -v -p no:cacheprovideenv:[m
+[31m-env:[m
+[31m-  CITY: Lahore[m
+[31m-  LATITUDE: "31.5204"[m
+[31m-  LONGITUDE: "74.3587"[m
+[31m-  TIMEZONE: Asia/Karachi[m
+[31m-  HTTP_TIMEOUT_SECONDS: "15"[m
+\ No newline at end of file[m
+[32m+[m[32m          pytest -v -p no:cacheprovider[m

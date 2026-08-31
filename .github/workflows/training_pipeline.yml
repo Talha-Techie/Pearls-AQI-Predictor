@@ -1,11 +1,61 @@
 name: Training Pipeline
 
 on:
+  schedule:
+    - cron: "30 1 * * *"
+
   workflow_dispatch:
 
-jobs:
-  training-pipeline:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+permissions:
+  contents: read
 
+jobs:
+  train:
+    name: Daily AQI Model Training
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    env:
+      APP_ENV: production
+      CITY: Lahore
+      LATITUDE: "31.5204"
+      LONGITUDE: "74.3587"
+      TIMEZONE: Asia/Karachi
+      HTTP_TIMEOUT_SECONDS: "30"
+
+      REDIS_CONNECTION_STRING: ${{ secrets.REDIS_CONNECTION_STRING }}
+
+      DAGSHUB_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}
+      DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Apply Feast definitions
+        working-directory: feature_repo
+        run: |
+          feast apply
+
+      - name: Run daily training pipeline
+        run: |
+          python -m app.training_pipeline.daily_pipeline
+
+      - name: Upload benchmark reports
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: aqI-training-reports
+          path: reports/model_benchmarks/
+          if-no-files-found: warn
