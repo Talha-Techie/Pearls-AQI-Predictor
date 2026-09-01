@@ -61,6 +61,35 @@ st.set_page_config(
     page_icon="🌍",
     layout="wide",
 )
+st.markdown(
+    """
+    <style>
+    /* Fix raw Streamlit Material icon text in sidebar */
+    [data-testid="stSidebarCollapseButton"]
+    [data-testid="stIconMaterial"],
+    [data-testid="stSidebarCollapsedControl"]
+    [data-testid="stIconMaterial"] {
+        display: none !important;
+    }
+
+    /* Keep a clean visual collapse control */
+    [data-testid="stSidebarCollapseButton"] button::after {
+        content: "‹‹";
+        font-size: 22px;
+        color: #8b95a7;
+        line-height: 1;
+    }
+
+    [data-testid="stSidebarCollapsedControl"] button::after {
+        content: "››";
+        font-size: 22px;
+        color: #8b95a7;
+        line-height: 1;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
 
 st.html(
